@@ -95,10 +95,8 @@ export default function AdminPage() {
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [activeQuote, setActiveQuote] = useState<Quote | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     if (!isLoaded) return;
