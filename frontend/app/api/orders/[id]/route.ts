@@ -3,11 +3,16 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const order = await prisma.order.findUnique({ where: { id: params.id } });
-    if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    const { id } = await params;
+    const order = await prisma.order.findUnique({
+      where: { id },
+    });
+    if (!order) {
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    }
     return NextResponse.json({ order });
   } catch (error) {
     console.error("Fetch order error:", error);
