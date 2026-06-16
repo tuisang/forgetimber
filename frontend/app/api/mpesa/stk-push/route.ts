@@ -58,11 +58,11 @@ export async function POST(req: NextRequest) {
     const stkData = await stkRes.json();
 
     if (stkData.ResponseCode !== "0") {
-      return NextResponse.json(
-        { error: stkData.ResponseDescription ?? "STK push failed." },
-        { status: 400 }
-      );
-    }
+  return NextResponse.json(
+    { error: stkData.ResponseDescription ?? "STK push failed.", mpesaResponse: stkData },
+    { status: 400 }
+  );
+}
 
     await prisma.booking.update({
       where: { id: bookingId },
