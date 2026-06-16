@@ -41,7 +41,18 @@ export async function POST(req: NextRequest) {
 
     // Get booking to get amount
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-    const amount = IS_PRODUCTION ? 5000 : 1; // KES 5000 consultation fee
+    const amount = IS_PRODUCTION ? 5000 : 1; // KES 2000 consultation 
+    
+    console.log("STK request body:", JSON.stringify({
+  BusinessShortCode: SHORTCODE,
+  Password: password,
+  Timestamp: timestamp,
+  Amount: amount,
+  PartyA: formattedPhone,
+  PartyB: SHORTCODE,
+  PhoneNumber: formattedPhone,
+  CallBackURL: CALLBACK_URL,
+}));
 
     const stkRes = await fetch(`${MPESA_BASE}/mpesa/stkpush/v1/processrequest`, {
       method: "POST",
