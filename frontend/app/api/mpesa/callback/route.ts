@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendBookingConfirmationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { Body } = body;
-
     const resultCode = Body?.stkCallback?.ResultCode;
     const checkoutRequestId = Body?.stkCallback?.CheckoutRequestID;
     const metadata = Body?.stkCallback?.CallbackMetadata?.Item ?? [];
@@ -30,18 +30,35 @@ export async function POST(req: NextRequest) {
           paidAmount: amount ? String(amount) : null,
         },
       });
+
+      // Send confirmation email
+      const booking = await prisma.booking.findFirst({
+        where: { mpesaCheckoutId: checkoutRequestId },
+      });
+
+      if (booking) {
+        await sendBookingConfirmationEmail({
+          clientName: booking.name,
+          clientEmail: booking.email,
+          service: booking.service,
+          date: booking.date,
+          paymentMethod: "M-Pesa",
+          bookingId: booking.id,
+        });
+      }
+
       console.log(`✅ Booking payment confirmed: ${mpesaReceiptNumber}`);
     } else {
       await prisma.booking.updateMany({
         where: { mpesaCheckoutId: checkoutRequestId },
         data: { status: "pending" },
       });
-      console.log(`❌ Booking payment failed. ResultCode: ${resultCode}`);
+      console.log(`❌ Booking payment failed: ${checkoutRequestId}`);
     }
 
-    return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("M-Pesa callback error:", error);
-    return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
+    console.error("Callback error:", error);
+    return NextResponse.json({ error: "Callback processing failed." }, { status: 500 });
   }
 }
