@@ -63,6 +63,12 @@ export default function ReviewsPage() {
     body: "",
     service: "",
   });
+  const [errors, setErrors] = useState<{
+    authorName?: string;
+    rating?: string;
+    title?: string;
+    body?: string;
+  }>({});
 
   useEffect(() => {
     fetchReviews();
@@ -91,9 +97,18 @@ export default function ReviewsPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.authorName || !form.rating || !form.title || !form.body) {
-      return alert("Please fill in all required fields and select a rating.");
+    const newErrors: typeof errors = {};
+    if (!form.authorName.trim()) newErrors.authorName = "Please enter your name.";
+    if (!form.rating) newErrors.rating = "Please select a star rating.";
+    if (!form.title.trim()) newErrors.title = "Please add a short title for your review.";
+    if (!form.body.trim()) newErrors.body = "Please write your review.";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
+    setErrors({});
+
     setSubmitStatus("submitting");
     try {
       const res = await fetch("/api/reviews", {
@@ -168,6 +183,17 @@ export default function ReviewsPage() {
           </div>
         )}
 
+        {/* Error message (submission failed after passing validation) */}
+        {submitStatus === "error" && (
+          <div className="mb-8 p-6 bg-[#20201f] border-l-4 border-red-500 flex items-center gap-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div>
+              <p className="font-semibold text-red-400">Something went wrong.</p>
+              <p className="text-sm text-[#d3c4b9]">We couldn&apos;t submit your review. Please try again in a moment.</p>
+            </div>
+          </div>
+        )}
+
         {/* Review Form */}
         {showForm && (
           <div className="mb-12 bg-[#20201f] border border-[#4f453d]/40 border-t-2 border-t-[#e8bf9b] p-8">
@@ -175,27 +201,54 @@ export default function ReviewsPage() {
               Share Your Experience
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {[
-                { label: "Full Name *", field: "authorName", type: "text", placeholder: "Your name" },
-                { label: "Email", field: "authorEmail", type: "email", placeholder: "your@email.com" },
-              ].map((f) => (
-                <div key={f.field}>
-                  <label className="text-xs text-[#d3c4b9] mb-2 block tracking-widest" style={{ fontFamily: "JetBrains Mono, monospace" }}>{f.label}</label>
-                  <input
-                    type={f.type}
-                    placeholder={f.placeholder}
-                    value={form[f.field as keyof typeof form]}
-                    onChange={(e) => setForm((prev) => ({ ...prev, [f.field]: e.target.value }))}
-                    className="w-full bg-[#131313] border-b border-[#4f453d] focus:border-[#e8bf9b] py-2 text-[#e5e2e1] placeholder-[#9c8e84] outline-none transition-colors"
-                  />
-                </div>
-              ))}
+              <div>
+                <label className="text-xs text-[#d3c4b9] mb-2 block tracking-widest" style={{ fontFamily: "JetBrains Mono, monospace" }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={form.authorName}
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, authorName: e.target.value }));
+                    if (errors.authorName) setErrors((prev) => ({ ...prev, authorName: undefined }));
+                  }}
+                  className={`w-full bg-[#131313] border-b py-2 text-[#e5e2e1] placeholder-[#9c8e84] outline-none transition-colors ${
+                    errors.authorName ? "border-red-500" : "border-[#4f453d] focus:border-[#e8bf9b]"
+                  }`}
+                />
+                {errors.authorName && (
+                  <p className="text-red-400 text-xs mt-1">{errors.authorName}</p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs text-[#d3c4b9] mb-2 block tracking-widest" style={{ fontFamily: "JetBrains Mono, monospace" }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={form.authorEmail}
+                  onChange={(e) => setForm((prev) => ({ ...prev, authorEmail: e.target.value }))}
+                  className="w-full bg-[#131313] border-b border-[#4f453d] focus:border-[#e8bf9b] py-2 text-[#e5e2e1] placeholder-[#9c8e84] outline-none transition-colors"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="text-xs text-[#d3c4b9] mb-2 block tracking-widest" style={{ fontFamily: "JetBrains Mono, monospace" }}>YOUR RATING *</label>
-                <StarRating rating={form.rating} interactive onRate={(r) => setForm((prev) => ({ ...prev, rating: r }))} />
+                <StarRating
+                  rating={form.rating}
+                  interactive
+                  onRate={(r) => {
+                    setForm((prev) => ({ ...prev, rating: r }));
+                    if (errors.rating) setErrors((prev) => ({ ...prev, rating: undefined }));
+                  }}
+                />
+                {errors.rating && (
+                  <p className="text-red-400 text-xs mt-1">{errors.rating}</p>
+                )}
               </div>
               <div>
                 <label className="text-xs text-[#d3c4b9] mb-2 block tracking-widest" style={{ fontFamily: "JetBrains Mono, monospace" }}>SERVICE USED</label>
@@ -218,11 +271,19 @@ export default function ReviewsPage() {
               <label className="text-xs text-[#d3c4b9] mb-2 block tracking-widest" style={{ fontFamily: "JetBrains Mono, monospace" }}>REVIEW TITLE *</label>
               <input
                 type="text"
-                placeholder="Summarise your experience"
+                placeholder="e.g. 'Beautiful dining table, exceeded expectations'"
                 value={form.title}
-                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                className="w-full bg-[#131313] border-b border-[#4f453d] focus:border-[#e8bf9b] py-2 text-[#e5e2e1] placeholder-[#9c8e84] outline-none transition-colors"
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, title: e.target.value }));
+                  if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
+                }}
+                className={`w-full bg-[#131313] border-b py-2 text-[#e5e2e1] placeholder-[#9c8e84] outline-none transition-colors ${
+                  errors.title ? "border-red-500" : "border-[#4f453d] focus:border-[#e8bf9b]"
+                }`}
               />
+              {errors.title && (
+                <p className="text-red-400 text-xs mt-1">{errors.title}</p>
+              )}
             </div>
 
             <div className="mb-8">
@@ -230,10 +291,18 @@ export default function ReviewsPage() {
               <textarea
                 placeholder="Tell us about your experience with Forge & Timber..."
                 value={form.body}
-                onChange={(e) => setForm((prev) => ({ ...prev, body: e.target.value }))}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, body: e.target.value }));
+                  if (errors.body) setErrors((prev) => ({ ...prev, body: undefined }));
+                }}
                 rows={4}
-                className="w-full bg-[#131313] border border-[#4f453d] focus:border-[#e8bf9b] p-4 text-[#e5e2e1] placeholder-[#9c8e84] outline-none transition-colors resize-none"
+                className={`w-full bg-[#131313] border p-4 text-[#e5e2e1] placeholder-[#9c8e84] outline-none transition-colors resize-none ${
+                  errors.body ? "border-red-500" : "border-[#4f453d] focus:border-[#e8bf9b]"
+                }`}
               />
+              {errors.body && (
+                <p className="text-red-400 text-xs mt-1">{errors.body}</p>
+              )}
             </div>
 
             <div className="flex gap-4">
@@ -246,7 +315,10 @@ export default function ReviewsPage() {
                 {submitStatus === "submitting" ? "SUBMITTING..." : "SUBMIT REVIEW"}
               </button>
               <button
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setErrors({});
+                }}
                 className="border border-[#4f453d] text-[#d3c4b9] px-8 py-3 text-sm hover:border-[#e8bf9b] transition-colors"
               >
                 Cancel
