@@ -7,11 +7,21 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubscribe = () => {
-    if (!email) return;
+  const handleSubscribe = async () => {
+  if (!email) return;
+  try {
+    const res = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) throw new Error("Failed");
     setSubscribed(true);
     setEmail("");
-  };
+  } catch {
+    alert("Something went wrong subscribing. Please try again.");
+  }
+};
 
   const Logo = () => (
     <svg width="40" height="40" viewBox="0 0 36 36" fill="none">
