@@ -229,7 +229,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="pt-24 pb-24 max-w-[1440px] mx-auto px-4 md:px-16">
+      <div className="pt-40 pb-24 max-w-[1440px] mx-auto px-4 md:px-16">
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-10 border-b border-[#4f453d]/40 pb-4">
           {(["overview", "bookings", "orders", "quotes", "reviews", "chats"] as Tab[]).map((t) => (
