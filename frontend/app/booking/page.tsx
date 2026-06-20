@@ -11,10 +11,26 @@ interface FormData {
 
 type SubmitStatus = "idle" | "creating" | "stk_sent" | "confirmed" | "error";
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getFirstWeekday(year: number, month: number) {
+  return new Date(year, month, 1).getDay();
+}
+
 export default function BookingPage() {
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
-  const [selectedDate, setSelectedDate] = useState<number | null>(3);
+  const today = new Date();
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [formData, setFormData] = useState<FormData>({ name: "", phone: "", email: "" });
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -27,6 +43,29 @@ export default function BookingPage() {
 
   const handleInput = (field: keyof FormData, value: string) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+  const goToPrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  const formatSelectedDate = (date: Date | null) => {
+    if (!date) return "Not selected";
+    return date.toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" });
+  };
 
   const handleSubmit = async () => {
     if (!selectedService) return setErrorMsg("Please select a service.");
@@ -58,7 +97,7 @@ export default function BookingPage() {
           phone: formData.phone,
           email: formData.email,
           service: selectedService,
-          date: selectedDate ? `October ${selectedDate}, 2024` : "TBD",
+          date: selectedDate ? selectedDate.toISOString() : "TBD",
           paymentMethod,
           attachmentUrl,
         }),
@@ -260,28 +299,54 @@ export default function BookingPage() {
                   <label className="text-xs text-[#d3c4b9] mb-4 block tracking-widest" style={{ fontFamily: "JetBrains Mono, monospace" }}>Select Date</label>
                   <div className="bg-[#2a2a2a] p-4 border border-[#4f453d]">
                     <div className="flex justify-between items-center mb-6 px-2">
-                      <span className="font-bold">October 2024</span>
+                      <span className="font-bold">{MONTH_NAMES[viewMonth]} {viewYear}</span>
                       <div className="flex gap-4">
-                        <span className="material-symbols-outlined cursor-pointer hover:text-[#e8bf9b]">chevron_left</span>
-                        <span className="material-symbols-outlined cursor-pointer hover:text-[#e8bf9b]">chevron_right</span>
+                        <span
+                          onClick={goToPrevMonth}
+                          className="material-symbols-outlined cursor-pointer hover:text-[#e8bf9b]"
+                        >
+                          chevron_left
+                        </span>
+                        <span
+                          onClick={goToNextMonth}
+                          className="material-symbols-outlined cursor-pointer hover:text-[#e8bf9b]"
+                        >
+                          chevron_right
+                        </span>
                       </div>
                     </div>
                     <div className="grid grid-cols-7 gap-2 text-center text-xs text-[#9c8e84] mb-4" style={{ fontFamily: "JetBrains Mono, monospace" }}>
                       {["S","M","T","W","T","F","S"].map((d, i) => <span key={i}>{d}</span>)}
                     </div>
                     <div className="grid grid-cols-7 gap-2 text-center text-sm">
-                      {["29","30"].map((d) => <div key={d} className="py-2 text-[#9c8e84]">{d}</div>)}
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                        <div
-                          key={d}
-                          onClick={() => !isSubmitting && setSelectedDate(d)}
-                          className={`py-2 cursor-pointer transition-colors ${
-                            selectedDate === d ? "bg-[#e8bf9b] text-[#442b12] font-bold" : "hover:bg-[#8c6a4c]/30 hover:text-[#e8bf9b]"
-                          }`}
-                        >
-                          {d}
-                        </div>
+                      {Array.from({ length: getFirstWeekday(viewYear, viewMonth) }, (_, i) => (
+                        <div key={`empty-${i}`} />
                       ))}
+                      {Array.from({ length: getDaysInMonth(viewYear, viewMonth) }, (_, i) => i + 1).map((d) => {
+                        const cellDate = new Date(viewYear, viewMonth, d);
+                        const isPast = cellDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        const isSelected =
+                          selectedDate &&
+                          selectedDate.getDate() === d &&
+                          selectedDate.getMonth() === viewMonth &&
+                          selectedDate.getFullYear() === viewYear;
+
+                        return (
+                          <div
+                            key={d}
+                            onClick={() => !isSubmitting && !isPast && setSelectedDate(cellDate)}
+                            className={`py-2 transition-colors ${
+                              isPast
+                                ? "text-[#4f453d] cursor-not-allowed"
+                                : isSelected
+                                ? "bg-[#e8bf9b] text-[#442b12] font-bold cursor-pointer"
+                                : "cursor-pointer hover:bg-[#8c6a4c]/30 hover:text-[#e8bf9b]"
+                            }`}
+                          >
+                            {d}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -327,7 +392,7 @@ export default function BookingPage() {
                   <div className="flex justify-between">
                     <span className="text-[#d3c4b9]">Date</span>
                     <span className="text-xs tracking-widest" style={{ fontFamily: "JetBrains Mono, monospace" }}>
-                      {selectedDate ? `Oct ${selectedDate}, 2024` : "Not selected"}
+                      {formatSelectedDate(selectedDate)}
                     </span>
                   </div>
                   <div className="flex justify-between">
