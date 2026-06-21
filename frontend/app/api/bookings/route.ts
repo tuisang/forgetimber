@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +34,14 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ bookings: [] });
+    }
+
     const bookings = await prisma.booking.findMany({
+      where: { clerkUserId: userId },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ bookings });
