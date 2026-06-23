@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useUser, SignInButton } from "@clerk/nextjs";
 
 interface Message {
   role: "user" | "assistant";
@@ -14,25 +15,8 @@ const SUGGESTED_QUESTIONS = [
   "What is your pricing range?",
 ];
 
-const DUMMY_SYSTEM_PROMPT = `You are the AI Artisan for Forge & Timber Atelier, a premium bespoke furniture and metalwork studio based in Nairobi, Kenya. You specialize in rustic industrial luxury — combining African hardwoods (Mvule, Mahogany, Walnut) with structural steel and metalwork.
-
-You help customers with:
-- Information about custom furniture commissions (tables, chairs, shelving, desks)
-- Wood species guidance (Mvule, African Mahogany, Walnut, Cherry, Oak)
-- Metal fabrication services (TIG/MIG/Arc welding, steel, copper, brass)
-- Pricing estimates (furniture starts from KSh 15,000, dining tables from KSh 45,000, full installations from KSh 200,000)
-- Lead times (custom pieces: 4–12 weeks depending on complexity)
-- Care and maintenance of wood and metal furniture
-- Booking consultations (KES 5,000 consultation fee, refundable on order)
-- Payment options: M-Pesa, Visa/Mastercard, PayPal
-- Portfolio and past projects
-- Services: Custom Furniture, Wood-Metal Décor, Industrial Fabrication, Restoration & Repairs, Precision Welding, Interior & Commercial Installations
-
-Tone: Knowledgeable, warm, artisanal. Use craft terminology naturally. Keep responses concise (2–4 sentences unless more detail is needed). End responses with a gentle call to action when relevant (book a consultation, explore the portfolio, etc.).
-
-Contact: +254 726 461 196 | info@tuistech.co.ke | Located in Nairobi, Kenya.`;
-
 export default function ArtisanChatbot() {
+  const { isSignedIn, isLoaded } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -56,6 +40,7 @@ export default function ArtisanChatbot() {
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
+    if (!isSignedIn) return; // guard: never fetch if not signed in
 
     const userMessage: Message = { role: "user", content: text };
     const newMessages = [...messages, userMessage];
@@ -63,7 +48,6 @@ export default function ArtisanChatbot() {
     setInput("");
     setIsLoading(true);
 
-    // Add empty assistant message to stream into
     const streamingMessages = [...newMessages, { role: "assistant" as const, content: "" }];
     setMessages(streamingMessages);
 
@@ -178,7 +162,6 @@ export default function ArtisanChatbot() {
           transition: "opacity 0.4s ease",
         }}
       >
-        {/* Chat Panel */}
         {isOpen && (
           <div
             className="chatbot-panel"
@@ -219,16 +202,7 @@ export default function ArtisanChatbot() {
                     justifyContent: "center",
                   }}
                 >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#e8bf9b"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8bf9b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                 </div>
@@ -246,43 +220,16 @@ export default function ArtisanChatbot() {
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "#e8bf9b",
-                    fontFamily: "Playfair Display, serif",
-                    letterSpacing: "0.01em",
-                  }}
-                >
+                <p style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "#e8bf9b", fontFamily: "Playfair Display, serif", letterSpacing: "0.01em" }}>
                   The AI Artisan
                 </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "11px",
-                    color: "#9c8e84",
-                    fontFamily: "JetBrains Mono, monospace",
-                    letterSpacing: "0.08em",
-                  }}
-                >
+                <p style={{ margin: 0, fontSize: "11px", color: "#9c8e84", fontFamily: "JetBrains Mono, monospace", letterSpacing: "0.08em" }}>
                   FORGE &amp; TIMBER · ONLINE
                 </p>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#9c8e84",
-                  fontSize: "20px",
-                  padding: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  transition: "color 0.2s",
-                }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#9c8e84", fontSize: "20px", padding: "4px", display: "flex", alignItems: "center", transition: "color 0.2s" }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#e8bf9b")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#9c8e84")}
               >
@@ -293,19 +240,10 @@ export default function ArtisanChatbot() {
             {/* Messages */}
             <div
               className="chat-messages"
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                minHeight: "200px",
-                maxHeight: "300px",
-              }}
+              style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", minHeight: "200px", maxHeight: "300px" }}
             >
-              {/* Welcome message */}
-              {messages.length === 0 && (
+              {/* Not signed in: show sign-in prompt instead of chat */}
+              {isLoaded && !isSignedIn && (
                 <div className="message-bubble">
                   <div
                     style={{
@@ -316,26 +254,47 @@ export default function ArtisanChatbot() {
                       maxWidth: "90%",
                     }}
                   >
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: "13px",
-                        color: "#e5e2e1",
-                        lineHeight: "1.6",
-                      }}
-                    >
+                    <p style={{ margin: 0, fontSize: "13px", color: "#e5e2e1", lineHeight: "1.6" }}>
+                      Karibu! Please sign in to chat with the AI Artisan — this lets us save your conversation and link it to your bookings.
+                    </p>
+                  </div>
+                  <div style={{ marginTop: "10px" }}>
+                    <SignInButton mode="modal">
+                      <button
+                        style={{
+                          background: "#e8bf9b",
+                          border: "none",
+                          padding: "9px 16px",
+                          color: "#442b12",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Sign In
+                      </button>
+                    </SignInButton>
+                  </div>
+                </div>
+              )}
+
+              {/* Welcome message - only when signed in */}
+              {isSignedIn && messages.length === 0 && (
+                <div className="message-bubble">
+                  <div
+                    style={{
+                      background: "#20201f",
+                      border: "1px solid rgba(79,69,61,0.5)",
+                      borderLeft: "3px solid #e8bf9b",
+                      padding: "12px 14px",
+                      maxWidth: "90%",
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: "13px", color: "#e5e2e1", lineHeight: "1.6" }}>
                       Karibu. I'm the AI Artisan — trained on decades of timber and steel craft. Ask me anything about our bespoke furniture, materials, pricing, or book a consultation.
                     </p>
                   </div>
-                  {/* Suggested questions */}
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                    }}
-                  >
+                  <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
                     {SUGGESTED_QUESTIONS.map((q) => (
                       <button
                         key={q}
@@ -369,16 +328,8 @@ export default function ArtisanChatbot() {
                 </div>
               )}
 
-              {/* Messages */}
               {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className="message-bubble"
-                  style={{
-                    display: "flex",
-                    justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-                  }}
-                >
+                <div key={i} className="message-bubble" style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
                   <div
                     style={{
                       maxWidth: "85%",
@@ -386,17 +337,8 @@ export default function ArtisanChatbot() {
                       fontSize: "13px",
                       lineHeight: "1.6",
                       ...(msg.role === "user"
-                        ? {
-                            background: "#e8bf9b",
-                            color: "#2c1602",
-                            fontWeight: 500,
-                          }
-                        : {
-                            background: "#20201f",
-                            color: "#e5e2e1",
-                            border: "1px solid rgba(79,69,61,0.5)",
-                            borderLeft: "3px solid #e8bf9b",
-                          }),
+                        ? { background: "#e8bf9b", color: "#2c1602", fontWeight: 500 }
+                        : { background: "#20201f", color: "#e5e2e1", border: "1px solid rgba(79,69,61,0.5)", borderLeft: "3px solid #e8bf9b" }),
                     }}
                   >
                     {msg.content}
@@ -404,36 +346,15 @@ export default function ArtisanChatbot() {
                 </div>
               ))}
 
-              {/* Typing indicator - only show when loading before stream starts */}
               {isLoading && (
                 <div className="message-bubble" style={{ display: "flex" }}>
-                  <div
-                    style={{
-                      background: "#20201f",
-                      border: "1px solid rgba(79,69,61,0.5)",
-                      borderLeft: "3px solid #e8bf9b",
-                      padding: "12px 16px",
-                      display: "flex",
-                      gap: "5px",
-                      alignItems: "center",
-                    }}
-                  >
+                  <div style={{ background: "#20201f", border: "1px solid rgba(79,69,61,0.5)", borderLeft: "3px solid #e8bf9b", padding: "12px 16px", display: "flex", gap: "5px", alignItems: "center" }}>
                     {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="typing-dot"
-                        style={{
-                          width: "6px",
-                          height: "6px",
-                          background: "#e8bf9b",
-                          borderRadius: "50%",
-                        }}
-                      />
+                      <div key={i} className="typing-dot" style={{ width: "6px", height: "6px", background: "#e8bf9b", borderRadius: "50%" }} />
                     ))}
                   </div>
                 </div>
               )}
-              {/* Streaming cursor */}
               {!isLoading && messages.length > 0 && messages[messages.length - 1].role === "assistant" && messages[messages.length - 1].content === "" && (
                 <div className="message-bubble" style={{ display: "flex" }}>
                   <div style={{ background: "#20201f", border: "1px solid rgba(79,69,61,0.5)", borderLeft: "3px solid #e8bf9b", padding: "12px 16px" }}>
@@ -444,7 +365,7 @@ export default function ArtisanChatbot() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
+            {/* Input - disabled when not signed in */}
             <div
               style={{
                 padding: "12px 16px",
@@ -461,8 +382,8 @@ export default function ArtisanChatbot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about timber, steel, pricing..."
-                disabled={isLoading}
+                placeholder={isSignedIn ? "Ask about timber, steel, pricing..." : "Sign in to chat"}
+                disabled={isLoading || !isSignedIn}
                 style={{
                   flex: 1,
                   background: "#20201f",
@@ -479,14 +400,14 @@ export default function ArtisanChatbot() {
               />
               <button
                 onClick={() => sendMessage(input)}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !input.trim() || !isSignedIn}
                 style={{
-                  background: input.trim() ? "#e8bf9b" : "#353535",
+                  background: input.trim() && isSignedIn ? "#e8bf9b" : "#353535",
                   border: "none",
                   width: "40px",
                   height: "40px",
-                  cursor: input.trim() ? "pointer" : "default",
-                  color: input.trim() ? "#442b12" : "#9c8e84",
+                  cursor: input.trim() && isSignedIn ? "pointer" : "default",
+                  color: input.trim() && isSignedIn ? "#442b12" : "#9c8e84",
                   fontSize: "18px",
                   display: "flex",
                   alignItems: "center",
@@ -533,22 +454,12 @@ export default function ArtisanChatbot() {
           {isOpen ? (
             <span style={{ fontSize: "20px", color: "#442b12" }}>✕</span>
           ) : (
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#e8bf9b"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e8bf9b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               <line x1="9" y1="10" x2="15" y2="10" />
               <line x1="9" y1="14" x2="13" y2="14" />
             </svg>
           )}
-          {/* Unread dot */}
           {!isOpen && messages.length === 0 && (
             <div
               style={{
@@ -565,7 +476,6 @@ export default function ArtisanChatbot() {
           )}
         </button>
 
-        {/* Label tooltip */}
         {!isOpen && (
           <div
             style={{
@@ -583,15 +493,7 @@ export default function ArtisanChatbot() {
             }}
             className="chat-tooltip"
           >
-            <p
-              style={{
-                margin: 0,
-                fontSize: "11px",
-                color: "#e8bf9b",
-                fontFamily: "JetBrains Mono, monospace",
-                letterSpacing: "0.08em",
-              }}
-            >
+            <p style={{ margin: 0, fontSize: "11px", color: "#e8bf9b", fontFamily: "JetBrains Mono, monospace", letterSpacing: "0.08em" }}>
               AI ARTISAN · ASK ANYTHING
             </p>
           </div>
