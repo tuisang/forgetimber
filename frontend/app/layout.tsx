@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 const OG_IMAGE = "https://lh3.googleusercontent.com/aida-public/AB6AXuDKZkFB7nfJk6r7jmyQO-AVHnZdP7LJr29ZqN0oN7deW8u-FynV8eH49R4bubmO2QUoz08l5GAEmy704ZORM-htSo6QE8m1XQrNzsO9QWzsBJmHRZ7Y2DBUDqj62PuAbh-lASPFQ57rHdGz29cx9ckkpH4Zq2YmYd9he093plIplw7Okh7gZhohycXc2UdEF5He9qps9SX4cRwWOcjzKRvPvhskTw1ZJOvhJ2O_TXcdFP9WV_YbCCsPzmlJZwtHvC6fiB2l2pwLqsMT";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL('https://forgetimber.tuistech.co.ke'),
   title: {
     default: "Forge & Timber Atelier | Bespoke Furniture & Metalwork Nairobi",
     template: "%s | Forge & Timber Atelier",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_KE",
-    url: "https://tuistech.co.ke",
+    url: "https://forgetimber.tuistech.co.ke",
     siteName: "Forge & Timber Atelier",
     title: "Forge & Timber Atelier | Bespoke Furniture & Metalwork Nairobi",
     description: "Handcrafted furniture and metalwork in Nairobi, Kenya. African hardwoods meet industrial steel. Custom orders, M-Pesa payments accepted.",
@@ -68,9 +68,7 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION ?? "",
   },
-  alternates: {
-    canonical: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  },
+  alternates: { canonical: 'https://forgetimber.tuistech.co.ke' }
 };
 
 const jsonLd = {
