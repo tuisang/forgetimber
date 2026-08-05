@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     "furniture maker Nairobi",
     "industrial furniture Kenya",
   ],
-  authors: [{ name: "Forge & Timber Atelier", url: "https://tuistech.co.ke" }],
+  authors: [{ name: "Forge & Timber Atelier", url: "https://forgetimber.tuistech.co.ke" }],
   creator: "Forge & Timber Atelier",
   publisher: "Forge & Timber Atelier",
   category: "Furniture & Home Decor",
@@ -130,7 +130,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
           <meta name="theme-color" content="#131313" />
           <meta name="msapplication-TileColor" content="#131313" />
-          <link rel="canonical" href="https://tuistech.co.ke" />
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} bg-[#131313] text-[#e5e2e1]`}>
           <CartProvider>
