@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { useCart } from "@/lib/CartContext";
+import { useWishlist } from "@/lib/WishlistContext";
 import CartDrawer from "@/components/CartDrawer";
 
 export default function Navbar() {
@@ -13,6 +14,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const { totalItems } = useCart();
+  const { totalItems: wishlistCount } = useWishlist();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
@@ -85,6 +87,12 @@ export default function Navbar() {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+    </svg>
+  );
+
+  const HeartIcon = () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
     </svg>
   );
 
@@ -207,6 +215,21 @@ export default function Navbar() {
               )}
             </div>
 
+            <Link
+              href="/wishlist"
+              className="relative text-[#d3c4b9] hover:text-[#e8bf9b] transition-colors"
+            >
+              <HeartIcon />
+              {wishlistCount > 0 && (
+                <span
+                  className="absolute -top-2 -right-2 bg-[#e8bf9b] text-[#442b12] text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ fontFamily: "JetBrains Mono, monospace" }}
+                >
+                  {wishlistCount > 9 ? "9+" : wishlistCount}
+                </span>
+              )}
+            </Link>
+
             <button
               onClick={() => setCartOpen(true)}
               className="relative text-[#d3c4b9] hover:text-[#e8bf9b] transition-colors"
@@ -249,6 +272,17 @@ export default function Navbar() {
             >
               <SearchIcon />
             </button>
+            <Link
+              href="/wishlist"
+              className="relative text-[#d3c4b9] hover:text-[#e8bf9b] transition-colors"
+            >
+              <HeartIcon />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[#e8bf9b] text-[#442b12] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {wishlistCount > 9 ? "9+" : wishlistCount}
+                </span>
+              )}
+            </Link>
             <button
               onClick={() => setCartOpen(true)}
               className="relative text-[#d3c4b9] hover:text-[#e8bf9b] transition-colors"

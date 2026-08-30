@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/lib/CartContext";
 import ProductModal from "@/components/ProductModal";
 import { CartItem } from "@/lib/CartContext";
+import WishlistButton from "@/components/WishlistButton";
 import Footer from "@/components/Footer";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
@@ -184,11 +185,14 @@ export default function HomePage() {
                 <div className="absolute top-4 left-4">
                   <h3 className="text-white font-bold text-lg">{tool.name}</h3>
                 </div>
-                <div className="absolute top-4 right-4 bg-[#e8bf9b] text-black px-3 py-1 rounded-full font-semibold text-sm flex flex-col items-end leading-tight">
-                  <span>KSh {tool.price.toLocaleString()}</span>
-                  <span className="text-[10px] font-normal opacity-70">
-                    ≈ ${Math.round(tool.price / USD_KES_RATE).toLocaleString()}
-                  </span>
+                <div className="absolute top-4 right-4 flex items-start gap-2">
+                  <WishlistButton item={{ id: tool.id, name: tool.name, price: tool.price, img: tool.image }} />
+                  <div className="bg-[#e8bf9b] text-black px-3 py-1 rounded-full font-semibold text-sm flex flex-col items-end leading-tight">
+                    <span>KSh {tool.price.toLocaleString()}</span>
+                    <span className="text-[10px] font-normal opacity-70">
+                      ≈ ${Math.round(tool.price / USD_KES_RATE).toLocaleString()}
+                    </span>
+                  </div>
                 </div>
                 <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm p-3 rounded-xl w-[190px]">
                   <div className="flex items-center justify-between mb-2">

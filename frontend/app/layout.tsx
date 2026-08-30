@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import ArtisanChatbot from "@/components/ArtisanChatbot";
 import FloatingActions from "@/components/FloatingActions";
 import { CartProvider } from "@/lib/CartContext";
+import { WishlistProvider } from "@/lib/WishlistContext";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
 
@@ -133,12 +134,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} bg-[#131313] text-[#e5e2e1]`}>
           <CartProvider>
-            <Navbar />
-            <Suspense fallback={<Loading />}>
-              {children}
-            </Suspense>
-            <ArtisanChatbot />
-            <FloatingActions />
+            <WishlistProvider>
+              <Navbar />
+              <Suspense fallback={<Loading />}>
+                {children}
+              </Suspense>
+              <ArtisanChatbot />
+              <FloatingActions />
+            </WishlistProvider>
           </CartProvider>
         </body>
       </html>

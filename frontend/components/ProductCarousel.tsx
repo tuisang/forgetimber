@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
 import { useCart } from "@/lib/CartContext";
+import WishlistButton from "@/components/WishlistButton";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -151,8 +152,11 @@ export default function ProductCarousel() {
                   </h3>
                 </div>
 
-                <div className="absolute top-4 right-4 bg-[#e8bf9b] text-black px-3 py-1 rounded-full font-semibold">
-                  KSh {product.price.toLocaleString()}
+                <div className="absolute top-4 right-4 flex items-start gap-2">
+                  <WishlistButton item={{ id: product.id, name: product.name, price: product.price, img: product.image }} />
+                  <div className="bg-[#e8bf9b] text-black px-3 py-1 rounded-full font-semibold">
+                    KSh {product.price.toLocaleString()}
+                  </div>
                 </div>
 
                 <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm p-3 rounded-xl w-[190px]">
