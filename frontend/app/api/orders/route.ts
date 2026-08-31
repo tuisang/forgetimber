@@ -35,8 +35,9 @@ export async function PATCH(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
     const body = await req.json();
-    const { name, email, phone, address, items, totalAmount, paymentMethod, clerkUserId } = body;
+    const { name, email, phone, address, items, totalAmount, paymentMethod } = body;
 
     if (!name || !email || !phone || !items || !totalAmount || !paymentMethod) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
         items,
         totalAmount,
         paymentMethod,
-        clerkUserId: clerkUserId ?? null,
+        clerkUserId: userId ?? null,
         status: "pending",
       },
     });
