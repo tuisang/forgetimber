@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendNewsletterWelcomeEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    let isNewSubscriber = true;
 
     try {
       await prisma.subscriber.create({
@@ -25,6 +27,14 @@ export async function POST(req: NextRequest) {
         (err as { code?: string }).code === "P2002";
 
       if (!isDuplicate) throw err;
+      isNewSubscriber = false;
+    }
+
+    if (isNewSubscriber) {
+      // Fire-and-forget: don't let a slow/failed email delay the response.
+      sendNewsletterWelcomeEmail(normalizedEmail).catch((err) =>
+        console.error("Welcome email failed:", err)
+      );
     }
 
     return NextResponse.json({ success: true });

@@ -79,7 +79,18 @@ interface ChatSession {
   messages: ChatMessage[];
 }
 
-type Tab = "overview" | "bookings" | "chats" | "reviews" | "quotes" | "orders";
+interface ErrorLogEntry {
+  id: string;
+  message: string;
+  stack: string | null;
+  source: string;
+  url: string | null;
+  userAgent: string | null;
+  clerkUserId: string | null;
+  createdAt: string;
+}
+
+type Tab = "overview" | "bookings" | "chats" | "reviews" | "quotes" | "orders" | "errors";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#ffb785",
@@ -101,6 +112,7 @@ export default function AdminPage() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeQuote, setActiveQuote] = useState<Quote | null>(null);
+  const [errors, setErrors] = useState<ErrorLogEntry[]>([]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -114,23 +126,26 @@ export default function AdminPage() {
   const fetchAll = async () => {
     setIsLoading(true);
     try {
-      const [bRes, cRes, rRes, qRes, oRes] = await Promise.all([
+      const [bRes, cRes, rRes, qRes, oRes, eRes] = await Promise.all([
         fetch("/api/admin/bookings"),
         fetch("/api/admin/chats"),
         fetch("/api/admin/reviews"),
         fetch("/api/admin/quotes"),
         fetch("/api/admin/orders"),
+        fetch("/api/admin/errors"),
       ]);
       const bData = await bRes.json();
       const cData = await cRes.json();
       const rData = await rRes.json();
       const qData = await qRes.json();
       const oData = await oRes.json();
+      const eData = await eRes.json();
       setBookings(bData.bookings ?? []);
       setSessions(cData.sessions ?? []);
       setReviews(rData.reviews ?? []);
       setQuotes(qData.quotes ?? []);
       setOrders(oData.orders ?? []);
+      setErrors(eData.errors ?? []);
       if (cData.sessions?.length > 0) setActiveSession(cData.sessions[0].id);
     } catch (e) {
       console.error(e);
@@ -175,6 +190,20 @@ export default function AdminPage() {
         body: JSON.stringify({ id }),
       });
       setReviews((prev) => prev.filter((r) => r.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const deleteError = async (id?: string) => {
+    if (!confirm(id ? "Dismiss this error log?" : "Clear ALL error logs?")) return;
+    try {
+      await fetch("/api/admin/errors", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      setErrors((prev) => (id ? prev.filter((e) => e.id !== id) : []));
     } catch (e) {
       console.error(e);
     }
@@ -232,7 +261,7 @@ export default function AdminPage() {
       <div className="pt-64 pb-24 max-w-[1440px] mx-auto px-4 md:px-16">
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-10 border-b border-[#4f453d]/40 pb-4">
-          {(["overview", "bookings", "orders", "quotes", "reviews", "chats"] as Tab[]).map((t) => (
+          {(["overview", "bookings", "orders", "quotes", "reviews", "chats", "errors"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -717,6 +746,74 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {tab === "errors" && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-sm text-[#9c8e84]">
+                {errors.length} logged error{errors.length === 1 ? "" : "s"} (most recent 200)
+              </p>
+              {errors.length > 0 && (
+                <button
+                  onClick={() => deleteError()}
+                  className="text-xs border border-[#4f453d] px-4 py-2 hover:border-[#f87171] hover:text-[#f87171] transition-colors"
+                  style={{ fontFamily: "JetBrains Mono, monospace" }}
+                >
+                  CLEAR ALL
+                </button>
+              )}
+            </div>
+            {errors.length === 0 ? (
+              <div className="bg-[#20201f] border border-[#4f453d]/40 p-16 text-center">
+                <span className="material-symbols-outlined text-4xl text-[#4ade80] mb-4 block">check_circle</span>
+                <p className="text-[#9c8e84]">No errors logged. Everything looks healthy.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {errors.map((err) => (
+                  <div key={err.id} className="bg-[#20201f] border border-[#4f453d]/40 p-5">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span
+                            className="text-[10px] px-2 py-1 border"
+                            style={{
+                              borderColor: err.source.startsWith("server") ? "#f87171" : "#facc15",
+                              color: err.source.startsWith("server") ? "#f87171" : "#facc15",
+                              fontFamily: "JetBrains Mono, monospace",
+                            }}
+                          >
+                            {err.source.toUpperCase()}
+                          </span>
+                          <span className="text-[10px] text-[#4f453d]" style={{ fontFamily: "JetBrains Mono, monospace" }}>
+                            {formatDate(err.createdAt)}
+                          </span>
+                        </div>
+                        <p className="text-sm font-semibold text-[#e5e2e1] break-words">{err.message}</p>
+                        {err.url && <p className="text-xs text-[#9c8e84] mt-1 break-all">{err.url}</p>}
+                        {err.stack && (
+                          <details className="mt-2">
+                            <summary className="text-xs text-[#e8bf9b] cursor-pointer">Stack trace</summary>
+                            <pre className="text-[10px] text-[#9c8e84] mt-2 whitespace-pre-wrap break-words bg-[#131313] p-3 border border-[#4f453d]/40 max-h-64 overflow-y-auto">
+                              {err.stack}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => deleteError(err.id)}
+                        className="text-xs text-[#4f453d] hover:text-[#f87171] transition-colors shrink-0"
+                        title="Dismiss"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

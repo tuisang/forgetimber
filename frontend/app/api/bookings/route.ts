@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { logServerError } from "@/lib/errorLog";
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,6 +30,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, booking });
   } catch (error) {
     console.error("Booking creation error:", error);
+    await logServerError({
+      message: error instanceof Error ? error.message : "Booking creation failed",
+      stack: error instanceof Error ? error.stack : null,
+      source: "server:bookings-post",
+    });
     return NextResponse.json({ error: "Failed to create booking." }, { status: 500 });
   }
 }

@@ -111,3 +111,16 @@ model Subscriber {
 
   @@map("subscribers")
 }
+
+model ErrorLog {
+  id          String   @id @default(cuid())
+  message     String
+  stack       String?
+  source      String   @default("client")
+  url         String?
+  userAgent   String?
+  clerkUserId String?
+  createdAt   DateTime @default(now())
+
+  @@map("error_logs")
+}

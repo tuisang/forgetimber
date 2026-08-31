@@ -7,6 +7,8 @@ import ArtisanChatbot from "@/components/ArtisanChatbot";
 import FloatingActions from "@/components/FloatingActions";
 import { CartProvider } from "@/lib/CartContext";
 import { WishlistProvider } from "@/lib/WishlistContext";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
+import ErrorTracker from "@/components/ErrorTracker";
 import { Suspense } from "react";
 import Loading from "@/app/loading";
 
@@ -133,6 +135,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <meta name="msapplication-TileColor" content="#131313" />
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} bg-[#131313] text-[#e5e2e1]`}>
+          <GoogleAnalytics />
+          <ErrorTracker />
           <CartProvider>
             <WishlistProvider>
               <Navbar />

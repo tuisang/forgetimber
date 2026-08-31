@@ -15,6 +15,31 @@ interface Booking {
   mpesaReceiptNumber?: string;
 }
 
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  id: string;
+  items: OrderItem[];
+  totalAmount: number;
+  status: string;
+  paymentMethod: string;
+  createdAt: string;
+  mpesaReceiptNumber?: string;
+}
+
+interface Quote {
+  id: string;
+  service: string;
+  status: string;
+  budget: string;
+  timeline: string;
+  createdAt: string;
+}
+
 interface ChatSession {
   id: string;
   createdAt: string;
@@ -27,6 +52,16 @@ const STATUS_COLORS: Record<string, string> = {
   confirmed: "#4ade80",
   completed: "#60a5fa",
   cancelled: "#f87171",
+  paid: "#4ade80",
+  processing: "#60a5fa",
+  shipped: "#a78bfa",
+  delivered: "#4ade80",
+  failed: "#f87171",
+  new: "#ffb785",
+  reviewing: "#60a5fa",
+  quoted: "#4ade80",
+  accepted: "#4ade80",
+  declined: "#f87171",
 };
 
 const STATUS_ICONS: Record<string, string> = {
@@ -35,6 +70,16 @@ const STATUS_ICONS: Record<string, string> = {
   confirmed: "check_circle",
   completed: "verified",
   cancelled: "cancel",
+  paid: "check_circle",
+  processing: "sync",
+  shipped: "local_shipping",
+  delivered: "verified",
+  failed: "error",
+  new: "fiber_new",
+  reviewing: "search",
+  quoted: "request_quote",
+  accepted: "thumb_up",
+  declined: "thumb_down",
 };
 
 const ORDER_STEPS = [
@@ -48,6 +93,8 @@ const ORDER_STEPS = [
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeBooking, setActiveBooking] = useState<string | null>(null);
@@ -68,8 +115,16 @@ export default function DashboardPage() {
     const cText = await cRes.text();
     console.log("Chat response:", cText);
 
+    const oRes = await fetch("/api/orders");
+    const oText = await oRes.text();
+
+    const qRes = await fetch("/api/quotes");
+    const qText = await qRes.text();
+
     setBookings(JSON.parse(bText).bookings ?? []);
     setSessions(JSON.parse(cText).sessions ?? []);
+    setOrders(oRes.ok ? JSON.parse(oText).orders ?? [] : []);
+    setQuotes(qRes.ok ? JSON.parse(qText).quotes ?? [] : []);
   } catch (e) {
     console.error(e);
   } finally {
@@ -162,8 +217,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {[
             { label: "TOTAL BOOKINGS", value: bookings.length, icon: "calendar_month" },
-            { label: "CONFIRMED", value: bookings.filter((b) => b.status === "confirmed" || b.status === "completed").length, icon: "check_circle" },
-            { label: "PENDING", value: bookings.filter((b) => b.status === "pending" || b.status === "awaiting_payment").length, icon: "schedule" },
+            { label: "ORDERS", value: orders.length, icon: "shopping_bag" },
+            { label: "QUOTE REQUESTS", value: quotes.length, icon: "request_quote" },
             { label: "CHAT SESSIONS", value: sessions.length, icon: "chat_bubble" },
           ].map((stat) => (
             <div key={stat.label} className="bg-[#20201f] border border-[#4f453d]/40 p-6">
@@ -344,6 +399,118 @@ export default function DashboardPage() {
                             {b.status.replace("_", " ").toUpperCase()}
                           </span>
                           <p className="text-xs text-[#4f453d]">{formatDate(b.createdAt)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* My Orders */}
+              <section className="bg-[#20201f] border border-[#4f453d]/40">
+                <div className="p-6 border-b border-[#4f453d]/40 flex justify-between items-center">
+                  <h2 className="text-xl font-semibold" style={{ fontFamily: "Playfair Display, serif" }}>
+                    My Orders
+                  </h2>
+                  <Link href="/shop" className="text-xs text-[#e8bf9b] hover:underline" style={{ fontFamily: "JetBrains Mono, monospace" }}>
+                    + NEW
+                  </Link>
+                </div>
+                {orders.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <span className="material-symbols-outlined text-4xl text-[#4f453d] mb-4 block">shopping_bag</span>
+                    <p className="text-[#9c8e84] mb-6">No orders yet.</p>
+                    <Link href="/shop" className="bg-[#e8bf9b] text-[#442b12] px-8 py-3 text-sm font-semibold">
+                      Browse Tools
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#4f453d]/20">
+                    {orders.map((o) => (
+                      <div key={o.id} className="p-5 flex items-center justify-between hover:bg-[#131313] transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="w-10 h-10 flex items-center justify-center border"
+                            style={{ borderColor: STATUS_COLORS[o.status] }}
+                          >
+                            <span className="material-symbols-outlined text-sm" style={{ color: STATUS_COLORS[o.status] }}>
+                              {STATUS_ICONS[o.status] ?? "shopping_bag"}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold">
+                              {o.items?.length ?? 0} item{(o.items?.length ?? 0) === 1 ? "" : "s"} &middot; KSh {o.totalAmount.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-[#9c8e84]">Order #{o.id.slice(-8).toUpperCase()} &middot; {o.paymentMethod}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className="text-xs px-2 py-1 border block mb-1"
+                            style={{
+                              borderColor: STATUS_COLORS[o.status],
+                              color: STATUS_COLORS[o.status],
+                              fontFamily: "JetBrains Mono, monospace",
+                            }}
+                          >
+                            {o.status.replace("_", " ").toUpperCase()}
+                          </span>
+                          <p className="text-xs text-[#4f453d]">{formatDate(o.createdAt)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* My Quote Requests */}
+              <section className="bg-[#20201f] border border-[#4f453d]/40">
+                <div className="p-6 border-b border-[#4f453d]/40 flex justify-between items-center">
+                  <h2 className="text-xl font-semibold" style={{ fontFamily: "Playfair Display, serif" }}>
+                    My Quote Requests
+                  </h2>
+                  <Link href="/quote" className="text-xs text-[#e8bf9b] hover:underline" style={{ fontFamily: "JetBrains Mono, monospace" }}>
+                    + NEW
+                  </Link>
+                </div>
+                {quotes.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <span className="material-symbols-outlined text-4xl text-[#4f453d] mb-4 block">request_quote</span>
+                    <p className="text-[#9c8e84] mb-6">No quote requests yet.</p>
+                    <Link href="/quote" className="bg-[#e8bf9b] text-[#442b12] px-8 py-3 text-sm font-semibold">
+                      Request a Quote
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#4f453d]/20">
+                    {quotes.map((q) => (
+                      <div key={q.id} className="p-5 flex items-center justify-between hover:bg-[#131313] transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="w-10 h-10 flex items-center justify-center border"
+                            style={{ borderColor: STATUS_COLORS[q.status] }}
+                          >
+                            <span className="material-symbols-outlined text-sm" style={{ color: STATUS_COLORS[q.status] }}>
+                              {STATUS_ICONS[q.status] ?? "request_quote"}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold capitalize">{q.service}</p>
+                            <p className="text-xs text-[#9c8e84]">{q.budget} &middot; {q.timeline}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className="text-xs px-2 py-1 border block mb-1"
+                            style={{
+                              borderColor: STATUS_COLORS[q.status],
+                              color: STATUS_COLORS[q.status],
+                              fontFamily: "JetBrains Mono, monospace",
+                            }}
+                          >
+                            {q.status.replace("_", " ").toUpperCase()}
+                          </span>
+                          <p className="text-xs text-[#4f453d]">{formatDate(q.createdAt)}</p>
                         </div>
                       </div>
                     ))}

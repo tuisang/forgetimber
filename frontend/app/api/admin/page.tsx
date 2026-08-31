@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 
-const ADMIN_USER_ID = "user_3ERVagEbBBtQoneJM1iKtwcw17C";
+const ADMIN_USER_ID = "user_3FOCtiBnlnMNPZ1naaYqyDcUFpP";
 
 interface Order {
   id: string;

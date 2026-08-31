@@ -172,25 +172,125 @@ function orderClientHtml(d: { clientName: string; orderId: string; items: OrderI
     </td></tr>`);
 }
 
-function orderAdminHtml(d: { clientName: string; clientEmail: string; orderId: string; items: OrderItem[]; totalAmount: number; paymentMethod: string; mpesaReceiptNumber?: string | null }) {
-  const itemRows = d.items.map(i => `
-    <tr>
-      <td style="padding:10px 20px;border-bottom:1px solid rgba(79,69,61,0.15);color:#e5e2e1;">${i.name} x${i.quantity}</td>
-      <td style="padding:10px 20px;border-bottom:1px solid rgba(79,69,61,0.15);color:#e8bf9b;text-align:right;">KSh ${(i.price * i.quantity).toLocaleString()}</td>
-    </tr>`).join("");
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  awaiting_payment: "Awaiting Payment",
+  confirmed: "Confirmed",
+  in_progress: "In Fabrication",
+  quality_check: "Quality Check",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  paid: "Paid",
+  failed: "Payment Failed",
+  new: "Received",
+  reviewing: "Under Review",
+  quoted: "Quoted",
+  accepted: "Accepted",
+  declined: "Declined",
+};
+
+function statusLabel(status: string) {
+  return STATUS_LABELS[status] ?? status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+interface BookingStatusEmailData {
+  clientName: string;
+  clientEmail: string;
+  service: string;
+  bookingId: string;
+  status: string;
+}
+
+export async function sendBookingStatusUpdateEmail(data: BookingStatusEmailData) {
+  const { clientName, clientEmail, service, bookingId, status } = data;
+  await sendEmail(
+    clientEmail,
+    `Booking Update: ${statusLabel(status)} – Forge & Timber Atelier`,
+    statusUpdateHtml({
+      greeting: `Hi ${clientName}, your booking status has changed.`,
+      idLabel: "BOOKING ID",
+      id: bookingId,
+      extraRow: detailRow("SERVICE", service),
+      status,
+    })
+  );
+}
+
+interface OrderStatusEmailData {
+  clientName: string;
+  clientEmail: string;
+  orderId: string;
+  status: string;
+}
+
+export async function sendOrderStatusUpdateEmail(data: OrderStatusEmailData) {
+  const { clientName, clientEmail, orderId, status } = data;
+  await sendEmail(
+    clientEmail,
+    `Order Update: ${statusLabel(status)} – Forge & Timber Atelier`,
+    statusUpdateHtml({
+      greeting: `Hi ${clientName}, your order status has changed.`,
+      idLabel: "ORDER ID",
+      id: orderId.slice(-8).toUpperCase(),
+      extraRow: "",
+      status,
+    })
+  );
+}
+
+interface QuoteStatusEmailData {
+  clientName: string;
+  clientEmail: string;
+  quoteId: string;
+  service: string;
+  status: string;
+}
+
+export async function sendQuoteStatusUpdateEmail(data: QuoteStatusEmailData) {
+  const { clientName, clientEmail, quoteId, service, status } = data;
+  await sendEmail(
+    clientEmail,
+    `Quote Update: ${statusLabel(status)} – Forge & Timber Atelier`,
+    statusUpdateHtml({
+      greeting: `Hi ${clientName}, your quote request status has changed.`,
+      idLabel: "QUOTE ID",
+      id: quoteId.slice(-8).toUpperCase(),
+      extraRow: detailRow("SERVICE", service),
+      status,
+    })
+  );
+}
+
+function statusUpdateHtml(d: { greeting: string; idLabel: string; id: string; extraRow: string; status: string }) {
   return wrap(`
-    ${headerHtml("NEW SHOP ORDER")}
+    ${headerHtml("STATUS UPDATE")}
     <tr><td style="background:#1c1b1b;padding:36px 40px;">
+      <h2 style="color:#e5e2e1;font-size:22px;margin:0 0 16px;">${d.greeting}</h2>
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#131313;border:1px solid #4f453d;margin-bottom:20px;">
-        ${detailRow("ORDER ID", d.orderId.slice(-8).toUpperCase())}
-        ${detailRow("CLIENT", d.clientName)}
-        ${detailRow("EMAIL", d.clientEmail)}
-        ${detailRow("PAYMENT", d.paymentMethod)}
-        ${detailRow("TOTAL", "KSh " + d.totalAmount.toLocaleString())}
+        ${detailRow(d.idLabel, d.id)}
+        ${d.extraRow}
+        ${detailRow("NEW STATUS", statusLabel(d.status))}
       </table>
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#131313;border:1px solid #4f453d;margin-bottom:20px;">
-        ${itemRows}
-      </table>
-      ${ctaButton(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://forgetimber.tuistech.co.ke"}/admin`, "OPEN ADMIN PANEL &rarr;")}
+      ${ctaButton(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://forgetimber.tuistech.co.ke"}/dashboard`, "VIEW MY DASHBOARD &rarr;")}
     </td></tr>`);
+}
+
+export async function sendNewsletterWelcomeEmail(email: string) {
+  await sendEmail(
+    email,
+    "Welcome to Forge & Timber Atelier",
+    wrap(`
+      ${headerHtml("WELCOME")}
+      <tr><td style="background:#1c1b1b;padding:36px 40px;">
+        <h2 style="color:#e5e2e1;font-size:22px;margin:0 0 16px;">You're on the list.</h2>
+        <p style="color:#d3c4b9;font-size:15px;line-height:1.7;margin:0 0 20px;">
+          Thanks for subscribing. You'll be the first to hear about new bespoke pieces,
+          available materials, workshop updates, and the occasional offer from Forge &amp; Timber Atelier.
+        </p>
+        <p style="color:#9c8e84;font-size:13px;line-height:1.7;margin:0 0 24px;">
+          In the meantime, browse our portfolio of completed commissions or start a quote for your own piece.
+        </p>
+        ${ctaButton(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://forgetimber.tuistech.co.ke"}/portfolio`, "VIEW OUR WORK &rarr;")}
+      </td></tr>`)
+  );
 }

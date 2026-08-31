@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { logServerError } from "@/lib/errorLog";
 
-const ADMIN_USER_ID = "user_3ERVagEbBBtQoneJM1iKtwcw17C";
+const ADMIN_USER_ID = "user_3FOCtiBnlnMNPZ1naaYqyDcUFpP";
 
 async function isAdmin() {
   const { userId } = await auth();
@@ -10,8 +11,18 @@ async function isAdmin() {
 }
 
 export async function GET() {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const orders = await prisma.order.findMany({ orderBy: { createdAt: "desc" } });
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (await isAdmin()) {
+    const orders = await prisma.order.findMany({ orderBy: { createdAt: "desc" } });
+    return NextResponse.json({ orders });
+  }
+
+  const orders = await prisma.order.findMany({
+    where: { clerkUserId: userId },
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json({ orders });
 }
 
@@ -48,6 +59,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, order });
   } catch (error) {
     console.error("Order creation error:", error);
+    await logServerError({
+      message: error instanceof Error ? error.message : "Order creation failed",
+      stack: error instanceof Error ? error.stack : null,
+      source: "server:orders-post",
+    });
     return NextResponse.json({ error: "Failed to create order." }, { status: 500 });
   }
 }

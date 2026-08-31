@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { sendQuoteStatusUpdateEmail } from "@/lib/email";
 
 const ADMIN_USER_ID = "user_3FOCtiBnlnMNPZ1naaYqyDcUFpP";
 
@@ -23,6 +24,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { id, status, adminNotes } = await req.json();
+  const existing = await prisma.quote.findUnique({ where: { id } });
   const quote = await prisma.quote.update({
     where: { id },
     data: {
@@ -30,5 +32,16 @@ export async function PATCH(req: NextRequest) {
       ...(adminNotes !== undefined && { adminNotes }),
     },
   });
+
+  if (existing && status && existing.status !== status) {
+    await sendQuoteStatusUpdateEmail({
+      clientName: quote.name,
+      clientEmail: quote.email,
+      quoteId: quote.id,
+      service: quote.service,
+      status: quote.status,
+    });
+  }
+
   return NextResponse.json({ quote });
 }
