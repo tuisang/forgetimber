@@ -172,6 +172,7 @@ export default function Footer() {
                 { label: "Portfolio", href: "/portfolio" },
                 { label: "Materials", href: "/catalog" },
                 { label: "Reviews", href: "/reviews" },
+                { label: "Track Order", href: "/track" },
                 { label: "Book Consultation", href: "/booking" },
               ].map((item) => (
                 <li key={item.label}>
